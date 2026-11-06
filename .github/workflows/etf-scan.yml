@@ -1,0 +1,65 @@
+name: ETF 每日扫描（收盘后）
+
+# ============================================================
+# 用途：每个交易日收盘后自动跑 ETF 分层扫描 + 30分金叉监控，
+#       报告作为 Artifact 留存（私有仓库，不公开）。
+# 触发：北京时间 15:30（UTC 07:30）周一至周五；也可在 Actions 页手动 Run。
+# 依赖：scripts/daily_etf_scan.js（纯 Node，自包含）、
+#       scripts/gold_cross_watch.py + scripts/min30_indicators.py（Python）
+# ============================================================
+
+on:
+  schedule:
+    # GitHub cron 仅支持 UTC。北京时间 15:30 = UTC 07:30。
+    # A股节假日休市时本流程会空跑，无害。
+    - cron: "30 7 * * 1-5"
+  workflow_dispatch: {}   # 允许手动触发
+
+jobs:
+  scan:
+    # ⚠️ 重要：默认海外 runner 访问东方财富等国内行情接口
+    #    很可能超时 / 被限流 / 返回空。若要稳定抓取 A股数据，
+    #    请把下面改成  runs-on: self-hosted
+    #    并去仓库 Settings → Actions → Runners 注册你本机的 self-hosted runner
+    #    （下载 runner 程序，在本机执行 ./config.cmd --url <仓库URL> --token <TOKEN>，再 ./run.cmd）
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 配置 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: 配置 Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: 运行每日 ETF 分层扫描（daily_etf_scan.js）
+        # 在线抓东财数据，输出到 reports/etf-scan/<YYYYMMDD>/
+        run: node scripts/daily_etf_scan.js --out ${{ github.workspace }}/reports/etf-scan
+
+      - name: 运行 30分金叉监控（gold_cross_watch.py，可选）
+        # 需要 scripts/min30_indicators.py 同目录 + data/alerts/gold_cross_watch.txt 监控池。
+        # 海外 runner 行情源受限时可能无数据，属正常，不阻断流程。
+        run: python scripts/gold_cross_watch.py
+        continue-on-error: true
+
+      - name: 上传扫描报告（Artifacts，保留 30 天）
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: etf-scan-${{ github.run_id }}
+          path: reports/etf-scan
+          retention-days: 30
+
+      # 备选：若希望把报告直接 commit 回仓库（而非仅 Artifact），
+      # 可替换上面的 upload-artifact 步骤为：
+      # - name: 提交报告回仓库
+      #   uses: stefanzweifel/git-auto-commit-action@v5
+      #   with:
+      #     commit_message: "chore: 每日 ETF 扫描报告 ${{ github.run_id }}"
+      #     file_pattern: "reports/etf-scan/*"
