@@ -1,0 +1,42 @@
+# ===== 敏感信息（绝不提交） =====
+.env
+*.env
+*.key
+*.pem
+id_rsa*
+credentials*
+secret*
+*.token
+
+# ===== WorkBuddy 内部数据（项目缓存，不备份） =====
+.workbuddy/
+
+# ===== 依赖 / 构建产物 =====
+node_modules/
+__pycache__/
+*.pyc
+dist/
+build/
+
+# ===== 日志 / 临时文件 =====
+*.log
+*.tmp
+*.bak
+*.swp
+*~
+.DS_Store
+Thumbs.db
+
+# ===== 大二进制（按需放开，默认忽略） =====
+*.pdf
+*.zip
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.mp4
+*.genie
+
+# ===== 编辑器 / OS =====
+.vscode/
+.idea/
