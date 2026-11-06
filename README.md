@@ -1,4 +1,4 @@
-# workbuddy-backup
+# bookish-potato
 
 个人 **WorkBuddy 工作区产物与配置的私有备份仓库**（private）。
 
@@ -24,11 +24,11 @@
 ## 关联远程并推送（GitHub 建好同名私有仓后）
 ```bash
 # SSH 方式（推荐，先按说明把公钥加到 GitHub）
-git remote add origin git@github.com:zengshanghai520/workbuddy-backup.git
+git remote add origin git@github.com:zengshanghai520/bookish-potato.git
 git push -u origin main
 
 # 或 HTTPS 方式（用 Personal Access Token 代替密码）
-git remote add origin https://github.com/zengshanghai520/workbuddy-backup.git
+git remote add origin https://github.com/zengshanghai520/bookish-potato.git
 git push -u origin main
 ```
 
