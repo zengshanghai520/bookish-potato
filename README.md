@@ -32,6 +32,31 @@ git remote add origin https://github.com/zengshanghai520/bookish-potato.git
 git push -u origin main
 ```
 
+## 自动化：每日 ETF 扫描（GitHub Actions）
+仓库自带两个 workflow，二选一启用：
+
+| 文件 | runner | 适用场景 |
+|---|---|---|
+| `.github/workflows/etf-scan.yml` | 云端 `ubuntu-latest` | 仅海外可访问的数据；**抓 A股行情易超时** |
+| `.github/workflows/etf-scan-self-hosted.yml` | 本机 `self-hosted` | **推荐**：在本机跑，网络与本地一致，东财数据稳 |
+
+**推荐用法（self-hosted）：**
+1. 本机装好 git + Node.js(≥18) + Python(≥3.10)，加入 PATH。
+2. 仓库网页：`Settings → Actions → Runners → New self-hosted runner` → 选系统 → 复制页面给出的命令执行（含 `--token`）：
+   ```bash
+   # Windows
+   ./config.cmd --url https://github.com/zengshanghai520/bookish-potato --token <页面给的TOKEN>
+   ./run.cmd
+   # Linux / macOS
+   ./config.sh  --url https://github.com/zengshanghai520/bookish-potato --token <页面给的TOKEN>
+   ./run.sh
+   ```
+   runner 注册后保持前台/后台运行，本机需常开才会按时触发。
+3. `Actions` 页 → 启用 `ETF 每日扫描（self-hosted 本机版）`。
+4. **禁用云端版**：`Actions` 页把 `ETF 每日扫描（收盘后）`(云端) Disable，避免两个同时挂 schedule 触发两次。
+
+触发时间：北京时间 **15:30**（UTC 07:30）周一至周五；也可在 Actions 页手动 `Run workflow`。报告作为 Artifact 留存 30 天（私有仓不公开）。
+
 ## 安全注意
 - ❌ 不要提交密钥、token、`.env`、敏感持仓明细
 - ❌ 大二进制（图片 / 视频 / PDF）默认已忽略，见 `.gitignore`

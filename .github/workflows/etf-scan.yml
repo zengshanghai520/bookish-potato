@@ -1,6 +1,14 @@
 name: ETF 每日扫描（收盘后）
 
 # ============================================================
+# 【云端版 / ubuntu-latest】（与 etf-scan-self-hosted.yml 二选一）
+#
+# ⚠️ 重要：默认海外 runner 访问东方财富等国内行情接口很可能超时 /
+#    被限流 / 返回空。若要稳定抓取 A股数据，请改用
+#    etf-scan-self-hosted.yml（在你本机注册 runner 运行），并在本仓库
+#    Actions 页面把本 workflow Disable（或把本文件改名加 .disabled 后缀），
+#    避免两个同时挂 schedule 触发两次。
+#
 # 用途：每个交易日收盘后自动跑 ETF 分层扫描 + 30分金叉监控，
 #       报告作为 Artifact 留存（私有仓库，不公开）。
 # 触发：北京时间 15:30（UTC 07:30）周一至周五；也可在 Actions 页手动 Run。

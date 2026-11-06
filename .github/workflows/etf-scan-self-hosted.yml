@@ -1,0 +1,82 @@
+name: ETF 每日扫描（self-hosted 本机版）
+
+# ============================================================
+# 【本机运行版 / self-hosted】
+# 与 etf-scan.yml（云端 ubuntu 版）二选一启用，不要两个同时挂 schedule！
+#
+# 为什么需要 self-hosted：
+#   GitHub 默认云端 runner 在海外，跑 daily_etf_scan.js 抓东方财富
+#   等国内行情接口大概率超时 / 被限流 / 返回空。self-hosted runner 跑在
+#   你自己的机器上，网络环境与你本地完全一致，数据抓取稳定。
+#
+# 启用步骤（一次性）：
+#   1. 本机装好 git + Node.js(>=18) + Python(>=3.10) 并加入 PATH。
+#   2. 进仓库网页：Settings → Actions → Runners → New self-hosted runner
+#      → 选你的系统（Windows/Linux/macOS）→ 页面会给出带 TOKEN 的命令：
+#        ./config.cmd --url https://github.com/zengshanghai520/bookish-potato --token <你的TOKEN>
+#        ./run.cmd          （Windows，前台跑；或 run.cmd & 后台）
+#        ./config.sh ...    （Linux/macOS）
+#        ./run.sh
+#      runner 注册后保持运行，本机需常开才会按时触发。
+#   3. 进 Actions 页面 → 找到本 workflow → Enable workflow。
+#   4. 重要：同时去把云端版 etf-scan.yml 在 Actions 页面 Disable（或把
+#      .github/workflows/etf-scan.yml 改名加 .disabled 后缀），避免重复触发。
+#
+# 触发：北京时间 15:30（UTC 07:30）周一至周五；也可在 Actions 页手动 Run。
+# ============================================================
+
+on:
+  schedule:
+    # GitHub cron 仅支持 UTC。北京时间 15:30 = UTC 07:30。
+    # A股节假日休市时本流程会空跑，无害。
+    - cron: "30 7 * * 1-5"
+  workflow_dispatch: {}   # 允许手动触发
+
+jobs:
+  scan:
+    # ⬇⬇⬇ self-hosted：在你本机注册好的 runner 上运行 ⬇⬇⬇
+    runs-on: self-hosted
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      # 本机通常已装好 Node/Python，这两步会命中缓存、几乎不耗时；
+      # 若本机确信已具备，可直接删掉这两个 step。
+      - name: 配置 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: 配置 Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: 运行每日 ETF 分层扫描（daily_etf_scan.js）
+        # 在线抓东财数据，输出到 reports/etf-scan/<YYYYMMDD>/
+        run: node scripts/daily_etf_scan.js --out ${{ github.workspace }}/reports/etf-scan
+
+      - name: 运行 30分金叉监控（gold_cross_watch.py，可选）
+        # 需要 scripts/min30_indicators.py 同目录 + data/alerts/gold_cross_watch.txt 监控池。
+        # 即便无数据也不阻断流程。
+        run: python scripts/gold_cross_watch.py
+        continue-on-error: true
+
+      - name: 上传扫描报告（Artifacts，保留 30 天）
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: etf-scan-${{ github.run_id }}
+          path: reports/etf-scan
+          retention-days: 30
+
+      # 备选：若希望把报告直接 commit 回仓库（而非仅 Artifact），
+      # 可替换上面的 upload-artifact 步骤为（注意 self-hosted 上需配置 git 身份）：
+      # - name: 提交报告回仓库
+      #   run: |
+      #     git config user.name "github-actions[bot]"
+      #     git config user.email "github-actions[bot]@users.noreply.github.com"
+      #     git add reports/etf-scan
+      #     git commit -m "chore: 每日 ETF 扫描报告 ${{ github.run_id }}" || echo "无变更"
+      #     git push
