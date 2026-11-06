@@ -57,6 +57,8 @@ git push -u origin main
 
 触发时间：北京时间 **15:30**（UTC 07:30）周一至周五；也可在 Actions 页手动 `Run workflow`。报告作为 Artifact 留存 30 天（私有仓不公开）。
 
+**想让本机 runner 后台静默挂起（不占终端）**：见 `runner/` 目录的启动包（`start-runner.cmd` 双击即挂，含一键停止），用法见 `runner/README.md`。
+
 ## 安全注意
 - ❌ 不要提交密钥、token、`.env`、敏感持仓明细
 - ❌ 大二进制（图片 / 视频 / PDF）默认已忽略，见 `.gitignore`
